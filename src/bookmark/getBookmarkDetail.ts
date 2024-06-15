@@ -3,21 +3,32 @@ import {
   ListBlockChildrenResponse
 } from '@notionhq/client/build/src/api-endpoints';
 import { client } from '../notion/client';
+import { Content } from './type';
+
+const parseCallout = async (secretToken: string, ids: string[]) => {
+  const blockPromises = ids.map((id) => getBookmarkBlockData(secretToken, id));
+  const blockResponse = await Promise.all(blockPromises);
+  return blockResponse.map(mapInnerBlockData);
+};
 
 // TODO
 // handle nested callout: quoted tweet
-// handle notion bookmark url
-// handle image
 const getBookmarkDetail = async (secretToken: string, pageId: string) => {
   const response = await getBookmarkBlockData(secretToken, pageId);
+
   const blocks = mapResponseData(response);
 
-  const blockPromises = blocks.map((result) =>
-    getBookmarkBlockData(secretToken, result!.id)
+  /**
+   * parse callout
+   */
+  const mappedInnerBlockData = await parseCallout(
+    secretToken,
+    blocks.map((block) => block!.id)
   );
-  const blockResponse = await Promise.all(blockPromises);
-  const mappedInnerBlockData = blockResponse.map(mapInnerBlockData);
 
+  /**
+   * prepare the final data
+   */
   const finalData = [];
   for (const parent of blocks) {
     for (const child of mappedInnerBlockData) {
@@ -40,7 +51,7 @@ const getBookmarkBlockData = (secretToken: string, blockId: string) => {
 // tweet url, author, avatar
 // need to get each block id first
 // if has_children is true, then get the children
-function mapResponseData(response: ListBlockChildrenResponse) {
+const mapResponseData = (response: ListBlockChildrenResponse) => {
   return (response.results as BlockObjectResponse[]).map((result) => {
     const callout = result.type === 'callout' && result.callout;
 
@@ -56,31 +67,47 @@ function mapResponseData(response: ListBlockChildrenResponse) {
       tweetUrl: callout.rich_text[2].href
     };
   });
-}
+};
 
-function mapInnerBlockData(response: ListBlockChildrenResponse) {
+const mapInnerBlockData = (response: ListBlockChildrenResponse) => {
   const results = response.results as BlockObjectResponse[];
 
-  let text = '';
-  const urlsInText: { url: string; text: string }[] = [];
+  const content: Content[] = [];
   const parentId = (results[0].parent.type === 'block_id' &&
     results[0].parent.block_id) as string;
 
-  results.forEach((result) => {
-    const paragraph = result.type === 'paragraph' && result.paragraph;
+  results.forEach(async (result) => {
+    if (result.type === 'paragraph') {
+      result.paragraph.rich_text.forEach((richText) => {
+        if (!richText.plain_text) return;
 
-    if (!paragraph) return;
+        return content.push({
+          id: result.id,
+          type: 'text',
+          text: richText.plain_text,
+          ...(richText.href && { url: richText.href })
+        });
+      });
+    }
 
-    paragraph.rich_text.forEach((richText) => {
-      if (richText.href) {
-        urlsInText.push({ url: richText.href, text: richText.plain_text });
-      }
-      text += richText.plain_text;
-    });
-    text += '\n';
+    if (result.type === 'image') {
+      return content.push({
+        id: result.id,
+        type: 'image',
+        url: (result.image.type === 'external' &&
+          result.image.external.url) as string
+      });
+    }
+
+    if (result.type === 'bookmark') return;
+
+    if (result.type === 'callout')
+      return content.push({ id: result.id, type: 'callout' });
+
+    content.push({ id: result.id, type: 'text', text: '\n' });
   });
 
-  return { parentId, text, urlsInText };
-}
+  return { parentId, content };
+};
 
 export default getBookmarkDetail;
