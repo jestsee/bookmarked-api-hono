@@ -1,16 +1,12 @@
 import { Hono } from 'hono';
 import getBookmarks from './getBookmarks';
+import tokenValidator from '../middleware/tokenValidator';
 
 const bookmark = new Hono();
 
-bookmark.use('/*', async (c, next) => {
-  const token = c.req.header('Authorization');
-
-  if (!token) {
-    return c.json({ message: 'Authorization header is required' }, 401);
-  }
-
-  await next();
+bookmark.use(tokenValidator);
+bookmark.onError((error, c) => {
+  return c.json({ message: error.message }, 500);
 });
 
 bookmark.get('/:databaseId', async (c) => {
