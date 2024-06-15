@@ -13,4 +13,11 @@ export type Content =
   | {
       type: 'callout';
       id: string;
+      author: Author;
     };
+
+export type Author = {
+  name: string;
+  username: string;
+  avatar: string;
+};

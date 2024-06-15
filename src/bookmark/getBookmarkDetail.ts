@@ -98,7 +98,13 @@ const mapInnerBlockData = async (
 
     if (result.type === 'callout') {
       calloutContentsPromise.push(parseCallout(secretToken, [result.id]));
-      return contents.push({ id: result.id, type: 'callout' });
+      const author = {
+        name: result.callout.rich_text[0].plain_text,
+        username: result.callout.rich_text[2].plain_text,
+        avatar: (result.callout.icon?.type === 'external' &&
+          result.callout.icon.external.url) as string
+      };
+      return contents.push({ id: result.id, type: 'callout', author });
     }
 
     return { id: result.id, type: 'text', text: '\n' };
