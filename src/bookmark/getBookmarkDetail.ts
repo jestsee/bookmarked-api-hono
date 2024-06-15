@@ -5,8 +5,6 @@ import {
 import { client } from '../notion/client';
 import { Content } from './type';
 
-// TODO
-// handle nested callout: quoted tweet
 const getBookmarkDetail = async (secretToken: string, pageId: string) => {
   const response = await getBookmarkBlockData(secretToken, pageId);
 
@@ -20,19 +18,12 @@ const getBookmarkDetail = async (secretToken: string, pageId: string) => {
     blocks.map((block) => block!.id)
   );
 
-  /**
-   * prepare the final data
-   */
-  const finalData = [];
-  for (const parent of blocks) {
-    for (const child of mappedInnerBlockData) {
-      if (parent!.id === child.parentId) {
-        finalData.push({ ...parent, ...child });
-      }
-    }
-  }
+  mappedInnerBlockData.forEach((child) => {
+    const index = blocks.findIndex((block) => block!.id === child.parentId);
+    blocks[index] = { ...blocks[index], ...(child as any) };
+  });
 
-  return finalData;
+  return blocks;
 };
 
 const parseCallout = async (secretToken: string, ids: string[]) => {
@@ -51,9 +42,6 @@ const getBookmarkBlockData = (secretToken: string, blockId: string) => {
   });
 };
 
-// tweet url, author, avatar
-// need to get each block id first
-// if has_children is true, then get the children
 const mapResponseData = (response: ListBlockChildrenResponse) => {
   return (response.results as BlockObjectResponse[]).map((result) => {
     const callout = result.type === 'callout' && result.callout;
@@ -125,8 +113,6 @@ const mapInnerBlockData = async (
     contents[index] = { ...contents[index], ...callout };
     callout.parentId;
   });
-
-  console.log(JSON.stringify(calloutContents, null, 2));
 
   return { parentId, contents };
 };
