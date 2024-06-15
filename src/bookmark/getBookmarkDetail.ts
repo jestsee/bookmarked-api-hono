@@ -5,12 +5,6 @@ import {
 import { client } from '../notion/client';
 import { Content } from './type';
 
-const parseCallout = async (secretToken: string, ids: string[]) => {
-  const blockPromises = ids.map((id) => getBookmarkBlockData(secretToken, id));
-  const blockResponse = await Promise.all(blockPromises);
-  return blockResponse.map(mapInnerBlockData);
-};
-
 // TODO
 // handle nested callout: quoted tweet
 const getBookmarkDetail = async (secretToken: string, pageId: string) => {
@@ -41,6 +35,15 @@ const getBookmarkDetail = async (secretToken: string, pageId: string) => {
   return finalData;
 };
 
+const parseCallout = async (secretToken: string, ids: string[]) => {
+  const blockPromises = ids.map((id) => getBookmarkBlockData(secretToken, id));
+  const blockResponse = await Promise.all(blockPromises);
+  const result = await Promise.all(
+    blockResponse.map((item) => mapInnerBlockData(secretToken, item))
+  );
+  return result;
+};
+
 const getBookmarkBlockData = (secretToken: string, blockId: string) => {
   return client.blocks.children.list({
     auth: secretToken,
@@ -69,10 +72,14 @@ const mapResponseData = (response: ListBlockChildrenResponse) => {
   });
 };
 
-const mapInnerBlockData = (response: ListBlockChildrenResponse) => {
+const mapInnerBlockData = async (
+  secretToken: string,
+  response: ListBlockChildrenResponse
+) => {
   const results = response.results as BlockObjectResponse[];
 
-  const content: Content[] = [];
+  const contents: Content[] = [];
+  const calloutContentsPromise: Promise<any>[] = [];
   const parentId = (results[0].parent.type === 'block_id' &&
     results[0].parent.block_id) as string;
 
@@ -81,7 +88,7 @@ const mapInnerBlockData = (response: ListBlockChildrenResponse) => {
       result.paragraph.rich_text.forEach((richText) => {
         if (!richText.plain_text) return;
 
-        return content.push({
+        return contents.push({
           id: result.id,
           type: 'text',
           text: richText.plain_text,
@@ -91,7 +98,7 @@ const mapInnerBlockData = (response: ListBlockChildrenResponse) => {
     }
 
     if (result.type === 'image') {
-      return content.push({
+      return contents.push({
         id: result.id,
         type: 'image',
         url: (result.image.type === 'external' &&
@@ -101,13 +108,27 @@ const mapInnerBlockData = (response: ListBlockChildrenResponse) => {
 
     if (result.type === 'bookmark') return;
 
-    if (result.type === 'callout')
-      return content.push({ id: result.id, type: 'callout' });
+    if (result.type === 'callout') {
+      calloutContentsPromise.push(parseCallout(secretToken, [result.id]));
+      return contents.push({ id: result.id, type: 'callout' });
+    }
 
-    content.push({ id: result.id, type: 'text', text: '\n' });
+    return { id: result.id, type: 'text', text: '\n' };
   });
 
-  return { parentId, content };
+  const [calloutContents] = await Promise.all(calloutContentsPromise);
+
+  calloutContents?.forEach((callout: Content & { parentId: string }) => {
+    const index = contents.findIndex(
+      (content) => content.id === callout.parentId
+    );
+    contents[index] = { ...contents[index], ...callout };
+    callout.parentId;
+  });
+
+  console.log(JSON.stringify(calloutContents, null, 2));
+
+  return { parentId, contents };
 };
 
 export default getBookmarkDetail;
