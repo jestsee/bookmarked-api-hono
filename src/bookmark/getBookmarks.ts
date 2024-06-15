@@ -5,12 +5,12 @@ import {
 import { client } from '../notion/client';
 
 const getBookmarks = async (secretToken: string, databaseId: string) => {
-  const data = await client.databases.query({
+  const response = await client.databases.query({
     auth: secretToken,
     database_id: databaseId
   });
 
-  return mapData(data);
+  return mapData(response);
 };
 
 const mapData = (data: QueryDatabaseResponse) => {
