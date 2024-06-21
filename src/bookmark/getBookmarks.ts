@@ -4,10 +4,15 @@ import {
 } from '@notionhq/client/build/src/api-endpoints';
 import { client } from '../notion/client';
 
-const getBookmarks = async (secretToken: string, databaseId: string) => {
+const getBookmarks = async (
+  secretToken: string,
+  databaseId: string,
+  startCursor?: string
+) => {
   const response = await client.databases.query({
     auth: secretToken,
-    database_id: databaseId
+    database_id: databaseId,
+    start_cursor: startCursor
   });
 
   return mapData(response);

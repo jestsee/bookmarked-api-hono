@@ -14,8 +14,11 @@ bookmark.onError((error, c) => {
 bookmark.get('/:databaseId', async (c) => {
   const token = c.req.header('Authorization')!;
   const { databaseId } = c.req.param();
+  const startCursor = c.req.query('startCursor');
 
-  return c.json(await getBookmarks(token.replace('Bearer ', ''), databaseId));
+  return c.json(
+    await getBookmarks(token.replace('Bearer ', ''), databaseId, startCursor)
+  );
 });
 
 bookmark.get('/:pageId/detail', async (c) => {
