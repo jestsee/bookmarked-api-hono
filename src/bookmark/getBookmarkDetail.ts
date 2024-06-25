@@ -74,6 +74,8 @@ const mapInnerBlockData = async (
   results.forEach(async (result) => {
     if (result.type === 'paragraph') {
       result.paragraph.rich_text.forEach((richText) => {
+        if (!richText.plain_text) return;
+
         return contents.push({
           id: result.id,
           type: 'text',
