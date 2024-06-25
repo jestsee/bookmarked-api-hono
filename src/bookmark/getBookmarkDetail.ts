@@ -76,7 +76,16 @@ const mapInnerBlockData = async (
       result.paragraph.rich_text.forEach((richText) => {
         if (!richText.plain_text) return;
 
-        const shouldAddNewLine = richText.href && !results[index - 1];
+        let shouldAddNewLine = false;
+
+        if (richText.href) {
+          const previousResult = results[index - 1];
+
+          shouldAddNewLine =
+            !previousResult ||
+            (previousResult.type == 'paragraph' &&
+              !previousResult.paragraph.rich_text[0].plain_text);
+        }
 
         return contents.push({
           id: result.id,
