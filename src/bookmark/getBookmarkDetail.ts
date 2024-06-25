@@ -74,8 +74,6 @@ const mapInnerBlockData = async (
   results.forEach(async (result) => {
     if (result.type === 'paragraph') {
       result.paragraph.rich_text.forEach((richText) => {
-        if (!richText.plain_text) return;
-
         return contents.push({
           id: result.id,
           type: 'text',
@@ -106,8 +104,6 @@ const mapInnerBlockData = async (
       };
       return contents.push({ id: result.id, type: 'callout', author });
     }
-
-    return { id: result.id, type: 'text', text: '\n' };
   });
 
   const [calloutContents] = await Promise.all(calloutContentsPromise);
