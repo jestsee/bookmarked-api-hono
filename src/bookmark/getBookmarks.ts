@@ -18,19 +18,39 @@ const getBookmarks = async (
   return mapData(response);
 };
 
+const extractAuthorInfo = (authorData: string) => {
+  const pattern = /^(.*?)\s+\(@(.*?)\)$/;
+  const match = RegExp(pattern).exec(authorData);
+
+  if (!match) return;
+
+  return {
+    name: match[1],
+    username: `@${match[2]}`
+  };
+};
+
 const mapData = (data: QueryDatabaseResponse) => {
   return (data.results as PageObjectResponse[]).map((result) => {
+    if (result.properties['Author'].type !== 'rich_text') return;
+
+    const authorData = result.properties['Author'].rich_text[0].plain_text;
+    const author = {
+      avatar: result.icon?.type === 'external' && result.icon.external.url,
+      ...extractAuthorInfo(authorData)
+    };
+
     return {
       id: result.id,
       createdTime: result.created_time,
       updatedTime: result.last_edited_time,
-      icon: result.icon?.type === 'external' && result.icon.external.url,
       isLiked:
         result.properties['Liked'].type === 'checkbox' &&
         result.properties['Liked'].checkbox,
-      author:
-        result.properties['Author'].type === 'rich_text' &&
-        result.properties['Author'].rich_text[0].plain_text,
+      type:
+        result.properties['Type'].type === 'select' &&
+        result.properties['Type'].select?.name.toLowerCase(),
+      author,
       tags:
         result.properties['Tags'].type === 'multi_select' &&
         result.properties['Tags'].multi_select,

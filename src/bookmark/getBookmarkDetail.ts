@@ -117,7 +117,6 @@ const mapInnerBlockData = async (
       (content) => content.id === callout.parentId
     );
     contents[index] = { ...contents[index], ...callout };
-    callout.parentId;
   });
 
   return { parentId, contents };
