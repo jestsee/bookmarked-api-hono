@@ -71,16 +71,18 @@ const mapInnerBlockData = async (
   const parentId = (results[0].parent.type === 'block_id' &&
     results[0].parent.block_id) as string;
 
-  results.forEach(async (result) => {
+  results.forEach(async (result, index) => {
     if (result.type === 'paragraph') {
       result.paragraph.rich_text.forEach((richText) => {
         if (!richText.plain_text) return;
+
+        const shouldAddNewLine = richText.href && !results[index - 1];
 
         return contents.push({
           id: result.id,
           type: 'text',
           text: richText.plain_text,
-          ...(richText.href && { url: richText.href })
+          ...(richText.href && { url: richText.href, shouldAddNewLine })
         });
       });
     }
