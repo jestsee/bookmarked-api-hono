@@ -1,10 +1,13 @@
+export type Text = {
+  type: 'text';
+  id: string;
+  text: string;
+  url?: string;
+};
+
 export type Content =
-  | {
-      type: 'text';
-      id: string;
-      text: string;
-      url?: string;
-    }
+  | { type: 'texts'; texts: Text[] }
+  | Text
   | {
       type: 'image';
       id: string;
