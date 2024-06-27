@@ -3,7 +3,7 @@ import {
   ListBlockChildrenResponse
 } from '@notionhq/client/build/src/api-endpoints';
 import { client } from '../notion/client';
-import { Content } from './type';
+import { Content, Text } from './type';
 
 const getBookmarkDetail = async (secretToken: string, pageId: string) => {
   const response = await getBookmarkBlockData(secretToken, pageId);
@@ -71,16 +71,24 @@ const mapInnerBlockData = async (
   const parentId = (results[0].parent.type === 'block_id' &&
     results[0].parent.block_id) as string;
 
+  let texts: Text[] = [];
+
   results.forEach(async (result, index) => {
     if (result.type === 'paragraph') {
       result.paragraph.rich_text.forEach((richText) => {
-        return contents.push({
+        return texts.push({
           id: result.id,
           type: 'text',
           text: richText.plain_text,
           ...(richText.href && { url: richText.href })
         });
       });
+      return texts.push({ id: result.id, type: 'text', text: '\n' });
+    }
+
+    if (texts.length > 0) {
+      contents.push({ type: 'texts', texts });
+      texts = [];
     }
 
     if (result.type === 'image') {
@@ -110,7 +118,7 @@ const mapInnerBlockData = async (
 
   calloutContents?.forEach((callout: Content & { parentId: string }) => {
     const index = contents.findIndex(
-      (content) => content.id === callout.parentId
+      (content) => content.type === 'callout' && content.id === callout.parentId
     );
     contents[index] = { ...contents[index], ...callout };
   });
