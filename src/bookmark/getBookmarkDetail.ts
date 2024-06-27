@@ -86,6 +86,7 @@ const mapInnerBlockData = async (
       return texts.push({ id: result.id, type: 'text', text: '\n' });
     }
 
+    // push texts content when current processing block is not paragraph
     if (texts.length > 0) {
       contents.push({ type: 'texts', texts });
       texts = [];
@@ -113,6 +114,12 @@ const mapInnerBlockData = async (
       return contents.push({ id: result.id, type: 'callout', author });
     }
   });
+
+  // handle case when last block is paragraph
+  if (texts.length > 0) {
+    contents.push({ type: 'texts', texts });
+    texts = [];
+  }
 
   const [calloutContents] = await Promise.all(calloutContentsPromise);
 
