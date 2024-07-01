@@ -15,7 +15,11 @@ const getBookmarks = async (
     start_cursor: startCursor
   });
 
-  return mapData(response);
+  return {
+    results: mapData(response),
+    nextCursor: response.next_cursor,
+    hasMore: response.has_more
+  };
 };
 
 const extractAuthorInfo = (authorData: string) => {
