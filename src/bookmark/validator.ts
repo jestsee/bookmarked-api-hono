@@ -22,5 +22,5 @@ export const headerValidator = (value: Record<string, string>) => {
     });
   }
 
-  return { token };
+  return { token: token.replace('Bearer ', '') };
 };
