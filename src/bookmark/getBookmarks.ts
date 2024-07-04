@@ -1,18 +1,27 @@
 import {
   PageObjectResponse,
+  QueryDatabaseParameters,
   QueryDatabaseResponse
 } from '@notionhq/client/build/src/api-endpoints';
 import { client } from '../notion/client';
+import { Filter } from './type';
 
 const getBookmarks = async (
   secretToken: string,
   databaseId: string,
+  filter: Filter,
   startCursor?: string
 ) => {
+  let _filter: QueryDatabaseParameters['filter'] = {
+    property: 'Tweet',
+    rich_text: { contains: filter.search ?? '' }
+  };
+
   const response = await client.databases.query({
     auth: secretToken,
     database_id: databaseId,
-    start_cursor: startCursor
+    start_cursor: startCursor,
+    filter: _filter
   });
 
   return {
