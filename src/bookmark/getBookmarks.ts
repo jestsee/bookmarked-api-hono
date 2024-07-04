@@ -17,6 +17,18 @@ const getBookmarks = async (
     rich_text: { contains: filter.search ?? '' }
   };
 
+  if (filter.type) {
+    _filter = {
+      and: [
+        _filter,
+        {
+          property: 'Type',
+          select: { equals: filter.type }
+        }
+      ]
+    };
+  }
+
   const response = await client.databases.query({
     auth: secretToken,
     database_id: databaseId,
