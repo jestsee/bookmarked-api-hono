@@ -1,36 +1,34 @@
 import { Hono } from 'hono';
 import getBookmarks from './getBookmarks';
-import tokenValidator from '../middleware/tokenValidator';
 import getBookmarkDetail from './getBookmarkDetail';
-import { Filter } from './type';
+import { validator } from 'hono/validator';
+import { headerValidator, queryValidator } from './validator';
 
 const bookmark = new Hono();
-
-bookmark.use(tokenValidator);
 
 bookmark.onError((error, c) => {
   return c.json({ message: error.message }, 500);
 });
 
-bookmark.get('/:databaseId', async (c) => {
-  const token = c.req.header('Authorization')!;
-  const { databaseId } = c.req.param();
-  const startCursor = c.req.query('startCursor');
-  const search = c.req.query('search');
+bookmark.get(
+  '/:databaseId',
+  validator('query', queryValidator),
+  validator('header', headerValidator),
+  async (c) => {
+    const { token } = c.req.valid('header')!;
+    const { startCursor, ...filter } = c.req.valid('query');
+    const { databaseId } = c.req.param();
 
-  const filter: Filter = {
-    search
-  };
-
-  return c.json(
-    await getBookmarks(
-      token.replace('Bearer ', ''),
-      databaseId,
-      filter,
-      startCursor
-    )
-  );
-});
+    return c.json(
+      await getBookmarks(
+        token.replace('Bearer ', ''),
+        databaseId,
+        filter,
+        startCursor
+      )
+    );
+  }
+);
 
 bookmark.get('/:pageId/detail', async (c) => {
   const token = c.req.header('Authorization')!;
