@@ -3,6 +3,7 @@ import getBookmarks from './getBookmarks';
 import getBookmarkDetail from './getBookmarkDetail';
 import { validator } from 'hono/validator';
 import { headerValidator, queryValidator } from './validator';
+import getBookmarkTags from './getBookmarkTags';
 
 const bookmark = new Hono();
 
@@ -19,22 +20,30 @@ bookmark.get(
     const { startCursor, ...filter } = c.req.valid('query');
     const { databaseId } = c.req.param();
 
-    return c.json(
-      await getBookmarks(
-        token.replace('Bearer ', ''),
-        databaseId,
-        filter,
-        startCursor
-      )
-    );
+    return c.json(await getBookmarks(token, databaseId, filter, startCursor));
   }
 );
 
-bookmark.get('/:pageId/detail', async (c) => {
-  const token = c.req.header('Authorization')!;
-  const { pageId } = c.req.param();
+bookmark.get(
+  '/:pageId/detail',
+  validator('header', headerValidator),
+  async (c) => {
+    const { token } = c.req.valid('header');
+    const { pageId } = c.req.param();
 
-  return c.json(await getBookmarkDetail(token.replace('Bearer ', ''), pageId));
-});
+    return c.json(await getBookmarkDetail(token, pageId));
+  }
+);
+
+bookmark.get(
+  '/:databaseId/tags',
+  validator('header', headerValidator),
+  async (c) => {
+    const { databaseId } = c.req.param();
+    const { token } = c.req.valid('header');
+
+    return c.json(await getBookmarkTags(token, databaseId));
+  }
+);
 
 export default bookmark;
