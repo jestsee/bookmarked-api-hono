@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import getBookmarks from './getBookmarks';
 import tokenValidator from '../middleware/tokenValidator';
 import getBookmarkDetail from './getBookmarkDetail';
+import { Filter } from './type';
 
 const bookmark = new Hono();
 
@@ -15,9 +16,19 @@ bookmark.get('/:databaseId', async (c) => {
   const token = c.req.header('Authorization')!;
   const { databaseId } = c.req.param();
   const startCursor = c.req.query('startCursor');
+  const search = c.req.query('search');
+
+  const filter: Filter = {
+    search
+  };
 
   return c.json(
-    await getBookmarks(token.replace('Bearer ', ''), databaseId, startCursor)
+    await getBookmarks(
+      token.replace('Bearer ', ''),
+      databaseId,
+      filter,
+      startCursor
+    )
   );
 });
 

@@ -24,3 +24,7 @@ export type Author = {
   username: string;
   avatar: string;
 };
+
+export type Filter = {
+  search?: string;
+};
