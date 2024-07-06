@@ -28,4 +28,5 @@ export type Author = {
 export type Filter = {
   search?: string;
   type?: 'Tweet' | 'Thread';
+  tags?: string[];
 };

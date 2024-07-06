@@ -4,6 +4,7 @@ import getBookmarkDetail from './getBookmarkDetail';
 import { validator } from 'hono/validator';
 import { headerValidator, queryValidator } from './validator';
 import getBookmarkTags from './getBookmarkTags';
+import { Filter } from './type';
 
 const bookmark = new Hono();
 
@@ -17,8 +18,11 @@ bookmark.get(
   validator('header', headerValidator),
   async (c) => {
     const { token } = c.req.valid('header')!;
-    const { startCursor, ...filter } = c.req.valid('query');
+    const { startCursor, ...restFilter } = c.req.valid('query');
     const { databaseId } = c.req.param();
+    const tags = c.req.queries('tags');
+
+    const filter: Filter = { ...restFilter, tags };
 
     return c.json(await getBookmarks(token, databaseId, filter, startCursor));
   }
