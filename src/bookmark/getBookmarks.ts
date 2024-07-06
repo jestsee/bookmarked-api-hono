@@ -17,17 +17,21 @@ const getBookmarks = async (
     rich_text: { contains: filter.search ?? '' }
   };
 
+  _filter = { and: [_filter] };
+
   if (filter.type) {
-    _filter = {
-      and: [
-        _filter,
-        {
-          property: 'Type',
-          select: { equals: filter.type }
-        }
-      ]
-    };
+    _filter.and.push({
+      property: 'Type',
+      select: { equals: filter.type }
+    });
   }
+
+  filter.tags?.forEach((tag) => {
+    _filter.and.push({
+      property: 'Tags',
+      multi_select: { contains: tag }
+    });
+  });
 
   const response = await client.databases.query({
     auth: secretToken,
