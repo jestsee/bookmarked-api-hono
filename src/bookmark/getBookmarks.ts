@@ -12,12 +12,22 @@ const getBookmarks = async (
   filter: Filter,
   startCursor?: string
 ) => {
-  let _filter: QueryDatabaseParameters['filter'] = {
-    property: 'Tweet',
-    rich_text: { contains: filter.search ?? '' }
+  const searchFilter = {
+    or: [
+      {
+        property: 'Tweet',
+        rich_text: { contains: filter.search ?? '' }
+      },
+      {
+        property: 'Author',
+        rich_text: { contains: filter.search ?? '' }
+      }
+    ]
   };
 
-  _filter = { and: [_filter] };
+  const _filter: QueryDatabaseParameters['filter'] = {
+    and: [searchFilter]
+  };
 
   if (filter.type) {
     _filter.and.push({
@@ -26,12 +36,16 @@ const getBookmarks = async (
     });
   }
 
-  filter.tags?.forEach((tag) => {
-    _filter.and.push({
-      property: 'Tags',
-      multi_select: { contains: tag }
-    });
-  });
+  if (filter.tags && filter.tags.length > 0) {
+    const tagsFilter = {
+      or: filter.tags.map((tag) => ({
+        property: 'Tags',
+        multi_select: { contains: tag }
+      }))
+    };
+
+    _filter.and.push(tagsFilter);
+  }
 
   const response = await client.databases.query({
     auth: secretToken,
