@@ -5,6 +5,7 @@ import { validator } from 'hono/validator';
 import { headerValidator, queryValidator } from './validator';
 import getBookmarkTags from './getBookmarkTags';
 import { Filter } from './type';
+import deleteBookmark from './deleteBookmark';
 
 const bookmark = new Hono();
 
@@ -49,5 +50,12 @@ bookmark.get(
     return c.json(await getBookmarkTags(token, databaseId));
   }
 );
+
+bookmark.delete('/:pageId', validator('header', headerValidator), async (c) => {
+  const { token } = c.req.valid('header');
+  const { pageId } = c.req.param();
+
+  return c.json(await deleteBookmark(token, pageId));
+});
 
 export default bookmark;
